@@ -20,14 +20,21 @@ export function MarkdownRenderer({ children }) {
   return (
     <ReactMarkdown
       components={{
-        a: ({ node, href, children, ...props }) => (
-          <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
-            {children}
-          </a>
-        ),
+        a: ({ node, href, children, ...props }) => {
+          // `node` is the remark AST node injected by react-markdown.
+          // It is destructured here to prevent it being forwarded to the DOM <a> element,
+          // which would cause a React unknown-prop warning.
+          return (
+            <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+              {children}
+            </a>
+          );
+        },
         p: ({ children }) => <p style={{ margin: '0.5rem 0' }}>{children}</p>,
-        code: ({ inline, children }) =>
-          inline ? (
+        code: ({ inline, children }) => {
+          // `inline` is a deprecated prop in react-markdown v8+. It still works but may be
+          // removed in a future version. Consider migrating to the `pre`/`code` split approach.
+          return inline ? (
             <code style={{
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
               padding: '0.2em 0.4em',
@@ -47,7 +54,8 @@ export function MarkdownRenderer({ children }) {
             }}>
               <code>{children}</code>
             </pre>
-          ),
+          );
+        },
         ul: ({ children }) => (
           <ul style={{ marginLeft: '1.25rem', marginTop: '0.5rem', marginBottom: '0.5rem' }}>
             {children}
@@ -59,8 +67,6 @@ export function MarkdownRenderer({ children }) {
           </ol>
         ),
         li: ({ children }) => <li style={{ marginBottom: '0.25rem' }}>{children}</li>,
-        strong: ({ children }) => <strong style={{ fontWeight: '600' }}>{children}</strong>,
-        em: ({ children }) => <em style={{ fontStyle: 'italic' }}>{children}</em>,
       }}
     >
       {children}

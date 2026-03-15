@@ -9,26 +9,31 @@ import { Bot, Trash2 } from 'lucide-react';
  * - onClear: callback when clear button is clicked
  */
 
+const BOT_ICON_SIZE = 24;
+const TRASH_ICON_SIZE = 18;
+const APP_NAME = 'Nexus AI';
+const STATUS_LABEL = 'Online';
+
 export function ChatHeader({ onClear }) {
   return (
     <header className="chat-header">
       <div className="header-left">
         <div className="bot-avatar">
-          <Bot size={24} color="white" />
+          <Bot size={BOT_ICON_SIZE} color="white" />
         </div>
-        <h1>Nexus AI</h1>
+        <h1>{APP_NAME}</h1>
       </div>
       <div className="header-right">
         <div className="status-indicator">
           <span className="status-dot"></span>
-          <span>Online</span>
+          <span>{STATUS_LABEL}</span>
         </div>
         <button
           onClick={onClear}
           className="clear-btn"
           title="Clear Conversation"
         >
-          <Trash2 size={18} />
+          <Trash2 size={TRASH_ICON_SIZE} />
         </button>
       </div>
     </header>

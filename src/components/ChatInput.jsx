@@ -12,7 +12,11 @@ import { Send, Loader2 } from 'lucide-react';
  * - isLoading: boolean, disables input and shows spinner when true
  */
 
+const SEND_ICON_SIZE = 20;
+const FOOTER_DISCLAIMER = 'Powered by n8n Workflow Automation';
+
 export function ChatInput({ value, onChange, onSubmit, isLoading }) {
+  const handleInputChange = (e) => onChange(e.target.value);
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(value);
@@ -25,19 +29,19 @@ export function ChatInput({ value, onChange, onSubmit, isLoading }) {
           type="text"
           placeholder="Query the nexus..."
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleInputChange}
           disabled={isLoading}
         />
         <button type="submit" className="send-btn" disabled={isLoading}>
           {isLoading ? (
-            <Loader2 className="animate-spin" size={20} />
+            <Loader2 className="animate-spin" size={SEND_ICON_SIZE} />
           ) : (
-            <Send size={20} />
+            <Send size={SEND_ICON_SIZE} />
           )}
         </button>
       </form>
       <p className="footer-disclaimer">
-        Powered by n8n Workflow Automation
+        {FOOTER_DISCLAIMER}
       </p>
     </footer>
   );

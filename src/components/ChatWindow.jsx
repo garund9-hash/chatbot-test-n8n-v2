@@ -16,7 +16,7 @@ import { ChatInput } from './ChatInput.jsx';
  * - isLoading: boolean
  * - onInputChange: callback when input changes
  * - onSendMessage: callback when message is sent
- * - onClearChat: callback when clear button is clicked
+ * - onClear: callback when clear button is clicked
  */
 
 export function ChatWindow({
@@ -25,12 +25,12 @@ export function ChatWindow({
   isLoading,
   onInputChange,
   onSendMessage,
-  onClearChat,
+  onClear,
 }) {
   return (
     <div className="app-container">
       <div className="chat-window">
-        <ChatHeader onClear={onClearChat} />
+        <ChatHeader onClear={onClear} />
         <MessageList messages={messages} isLoading={isLoading} />
         <ChatInput
           value={input}

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 import { MessageItem } from './MessageItem.jsx';
+import { TypingIndicator } from './TypingIndicator.jsx';
 import { useScrollToBottom } from '../hooks/useScrollToBottom.js';
 
 /**
@@ -17,24 +17,11 @@ export function MessageList({ messages, isLoading }) {
 
   return (
     <main className="message-list">
-      {messages.map((msg) => (
-        <MessageItem key={msg.id} message={msg} />
+      {messages.map((message) => (
+        <MessageItem key={message.id} message={message} />
       ))}
 
-      {isLoading && (
-        <div className="message-item bot">
-          <div className="message-sender-label">
-            <span>Assistant</span>
-          </div>
-          <div className="message-bubble bot">
-            <div className="typing-indicator">
-              <div className="dot"></div>
-              <div className="dot"></div>
-              <div className="dot"></div>
-            </div>
-          </div>
-        </div>
-      )}
+      {isLoading && <TypingIndicator />}
 
       <div ref={messagesEndRef} />
     </main>

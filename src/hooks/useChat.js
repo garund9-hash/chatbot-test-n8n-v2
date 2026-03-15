@@ -4,6 +4,8 @@ import { chatApi } from '../services/chatApi.js';
 import { MessageFactory } from '../lib/messageFactory.js';
 import { isCommand, executeCommand } from '../lib/commandRegistry.js';
 
+const FALLBACK_ERROR_MESSAGE = "I'm having trouble connecting right now. Please try again later.";
+
 /**
  * useChat
  * Primary custom hook: composes all chat logic.
@@ -34,42 +36,34 @@ export function useChat() {
     resetSession();
   };
 
-  const sendMessage = async (text) => {
-    if (!text.trim() || isLoading) return;
-
-    const trimmedInput = text.trim();
-
-    // Check if this is a command
-    if (isCommand(trimmedInput)) {
-      try {
-        const commandContext = {
-          sessionId,
-          clearChat,
-          addSystemMessage,
-        };
-        executeCommand(trimmedInput, commandContext);
-        setInput('');
-        return;
-      } catch (error) {
-        console.error('Command execution error:', error);
-        addSystemMessage(`Error: ${error.message}`);
-        setInput('');
-        return;
-      }
+  const handleCommand = (trimmedInput) => {
+    try {
+      const commandContext = {
+        sessionId,
+        clearChat,
+        addSystemMessage,
+      };
+      executeCommand(trimmedInput, commandContext);
+      setInput('');
+    } catch (error) {
+      console.error('Command execution error:', error);
+      addSystemMessage(`Error: ${error.message}`);
+      setInput('');
     }
+  };
 
-    // Not a command — proceed with API call
-    const userMessage = MessageFactory.userMessage(text);
+  const handleApiMessage = async (trimmedInput) => {
+    const userMessage = MessageFactory.userMessage(trimmedInput);
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const botResponse = await chatApi.sendMessage(text, sessionId);
-      setMessages((prev) => [...prev, MessageFactory.botMessage(botResponse)]);
+      const botText = await chatApi.sendMessage(trimmedInput, sessionId);
+      setMessages((prev) => [...prev, MessageFactory.botMessage(botText)]);
     } catch (error) {
       console.error('Chat error:', error);
-      const errorMsg = error.message || 'I\'m having trouble connecting right now. Please try again later.';
+      const errorMsg = error.message || FALLBACK_ERROR_MESSAGE;
       setMessages((prev) => [
         ...prev,
         MessageFactory.errorMessage(errorMsg),
@@ -79,11 +73,22 @@ export function useChat() {
     }
   };
 
+  const sendMessage = async (text) => {
+    if (!text.trim() || isLoading) return;
+
+    const trimmedInput = text.trim();
+
+    if (isCommand(trimmedInput)) {
+      handleCommand(trimmedInput);
+    } else {
+      await handleApiMessage(trimmedInput);
+    }
+  };
+
   return {
     messages,
     input,
     isLoading,
-    sessionId,
     setInput,
     sendMessage,
     clearChat,

@@ -21,6 +21,15 @@ export class UnrecognizedResponseError extends Error {
   }
 }
 
+/**
+ * hasUsableValue(obj, key): boolean
+ * Returns true when obj[key] exists and is non-null, non-undefined, non-empty-string.
+ * Extracted to eliminate the repeated triple guard on each response key check.
+ */
+function hasUsableValue(obj, key) {
+  return key in obj && obj[key] !== null && obj[key] !== undefined && obj[key] !== '';
+}
+
 export function n8nResponseAdapter(data) {
   // Plain string response
   if (typeof data === 'string') {
@@ -29,13 +38,14 @@ export function n8nResponseAdapter(data) {
 
   // Object response — check known keys
   if (typeof data === 'object' && data !== null) {
-    // Try 'output' first (common for n8n)
-    if ('output' in data && data.output !== null && data.output !== undefined && data.output !== '') {
+    // 'output' is the primary key: n8n AI Agent nodes always set this field.
+    if (hasUsableValue(data, 'output')) {
       return String(data.output);
     }
 
-    // Try 'message' as fallback
-    if ('message' in data && data.message !== null && data.message !== undefined && data.message !== '') {
+    // 'message' is a fallback for older n8n workflow shapes and webhook-only nodes
+    // that do not include an 'output' key.
+    if (hasUsableValue(data, 'message')) {
       return String(data.message);
     }
   }

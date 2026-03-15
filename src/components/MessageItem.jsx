@@ -16,6 +16,12 @@ import { MarkdownRenderer } from './MarkdownRenderer.jsx';
  * - message: { id, text, sender, isError?, isSystem? }
  */
 
+function resolveMessageType(sender, isError, isSystem) {
+  if (sender === 'bot' && isError) return 'error';
+  if (sender === 'bot' && isSystem) return 'system';
+  return sender;
+}
+
 const renderStrategies = {
   // User message: plain text, no markdown
   user: (text) => <span>{text}</span>,
@@ -31,23 +37,17 @@ const renderStrategies = {
 };
 
 export function MessageItem({ message }) {
-  const { id, text, sender, isError, isSystem } = message;
+  const { text, sender, isError, isSystem } = message;
 
-  // Determine rendering strategy
-  let messageType = sender;
-  if (sender === 'bot' && isError) {
-    messageType = 'error';
-  } else if (sender === 'bot' && isSystem) {
-    messageType = 'system';
-  }
-
+  const messageType = resolveMessageType(sender, isError, isSystem);
   const renderContent = renderStrategies[messageType] || renderStrategies.bot;
-  const bubbleClassName = `message-bubble ${sender} ${isError ? 'error' : ''} ${isSystem ? 'system' : ''}`;
+  const bubbleClassName = ['message-bubble', sender, isError && 'error', isSystem && 'system']
+    .filter(Boolean).join(' ');
   const senderLabel = sender === 'bot' ? 'Assistant' : 'You';
   const senderIcon = sender === 'bot' ? <Bot size={14} /> : <User size={14} />;
 
   return (
-    <div key={id} className={`message-item ${sender}`}>
+    <div className={`message-item ${sender}`}>
       <div className="message-sender-label">
         {senderIcon}
         <span>{senderLabel}</span>

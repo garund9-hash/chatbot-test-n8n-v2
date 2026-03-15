@@ -9,6 +9,8 @@
   --glass-blur: blur(12px);
   --font-main: 'Outfit', sans-serif;
   --font-display: 'Playfair Display', serif;
+  --status-online: #10b981;
+  --color-danger: #ef4444;
 }
 
 * {
@@ -40,7 +42,7 @@ body::before {
   z-index: -1;
 }
 
-/* Noise overlay */
+/* Noise overlay: z-index: 1000 ensures overlay appears above all content; pointer-events: none prevents interaction interference */
 body::after {
   content: '';
   position: fixed;
@@ -119,7 +121,7 @@ body::after {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #10b981;
+  background: var(--status-online);
 }
 
 .clear-btn {
@@ -136,7 +138,7 @@ body::after {
 
 .clear-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .chat-header h1 {
@@ -310,11 +312,6 @@ button.send-btn:hover {
 
 button.send-btn:active {
   transform: scale(0.95);
-}
-
-.hover-bg:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #ef4444 !important;
 }
 
 @keyframes fadeInSlide {

@@ -5,11 +5,11 @@ import { useRef, useEffect } from 'react';
  * Custom Hook: encapsulates scroll-to-bottom behavior.
  *
  * Usage:
- *   const messagesEndRef = useScrollToBottom([messages]);
+ *   const scrollAnchorRef = useScrollToBottom([messages]);
  *   return (
  *     <div className="messages">
  *       ...
- *       <div ref={messagesEndRef} />
+ *       <div ref={scrollAnchorRef} />
  *     </div>
  *   );
  *
@@ -18,11 +18,15 @@ import { useRef, useEffect } from 'react';
  */
 
 export function useScrollToBottom(dependencies = []) {
-  const ref = useRef(null);
+  const scrollAnchorRef = useRef(null);
 
+  // The deps array is intentionally dynamic (passed by the caller) rather than
+  // statically declared. This is a deliberate design choice: the hook must respond
+  // to whatever the caller decides is scroll-triggering state. ESLint exhaustive-deps
+  // would flag this, but it is correct for this generic utility hook.
   useEffect(() => {
-    ref.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollAnchorRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, dependencies);
 
-  return ref;
+  return scrollAnchorRef;
 }

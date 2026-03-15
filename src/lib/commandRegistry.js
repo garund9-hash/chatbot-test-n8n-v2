@@ -1,4 +1,13 @@
 /**
+ * normaliseCommand
+ * Trims and lowercases raw input for registry lookup.
+ * Eliminates duplicated normalisation logic in isCommand and executeCommand.
+ */
+function normaliseCommand(input) {
+  return input.trim().toLowerCase();
+}
+
+/**
  * commandRegistry
  * Command pattern: centralized registry of slash commands.
  * Each command is a function that receives a context object and performs an action.
@@ -13,7 +22,8 @@ export const commandRegistry = {
   },
 
   '/help': (context) => {
-    context.addSystemMessage('Available commands: /clear, /help, /session');
+    const available = Object.keys(commandRegistry).join(', ');
+    context.addSystemMessage(`Available commands: ${available}`);
   },
 
   '/session': (context) => {
@@ -26,7 +36,7 @@ export const commandRegistry = {
  * Check if input is a registered command.
  */
 export function isCommand(input) {
-  const trimmed = input.trim().toLowerCase();
+  const trimmed = normaliseCommand(input);
   return trimmed in commandRegistry;
 }
 
@@ -36,7 +46,7 @@ export function isCommand(input) {
  * Throws if the command is not registered.
  */
 export function executeCommand(input, context) {
-  const trimmed = input.trim().toLowerCase();
+  const trimmed = normaliseCommand(input);
   const command = commandRegistry[trimmed];
 
   if (!command) {

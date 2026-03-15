@@ -25,7 +25,7 @@ export const chatApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: text,
-        sessionId: sessionId,
+        sessionId,
       }),
     });
 
@@ -37,9 +37,7 @@ export const chatApi = {
 
     const data = await response.json();
 
-    // Use the adapter to normalize the response shape
-    const botResponse = n8nResponseAdapter(data);
-
-    return botResponse;
+    // Normalize the varied n8n response shapes to a plain string.
+    return n8nResponseAdapter(data);
   },
 };

@@ -11,7 +11,7 @@ import { ChatWindow } from './components/ChatWindow.jsx';
  * All JSX is delegated to ChatWindow and its sub-components.
  */
 
-function App() {
+export function App() {
   const {
     messages,
     input,
@@ -28,9 +28,7 @@ function App() {
       isLoading={isLoading}
       onInputChange={setInput}
       onSendMessage={sendMessage}
-      onClearChat={clearChat}
+      onClear={clearChat}
     />
   );
 }
-
-export default App;

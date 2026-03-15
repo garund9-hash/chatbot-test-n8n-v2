@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 
+const WELCOME_MESSAGE_TEXT = 'Hello! I am your AI assistant. How can I help you today?';
+
 /**
  * MessageFactory
  * Centralized factory for creating message objects.
@@ -47,7 +49,7 @@ export const MessageFactory = {
   welcomeMessage() {
     return {
       id: uuidv4(),
-      text: 'Hello! I am your AI assistant. How can I help you today?',
+      text: WELCOME_MESSAGE_TEXT,
       sender: 'bot',
     };
   },
