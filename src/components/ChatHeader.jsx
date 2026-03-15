@@ -14,7 +14,7 @@ const TRASH_ICON_SIZE = 18;
 const APP_NAME = 'Nexus AI';
 const STATUS_LABEL = 'Online';
 
-export function ChatHeader({ onClear }) {
+function ChatHeaderComponent({ onClear }) {
   return (
     <header className="chat-header">
       <div className="header-left">
@@ -39,3 +39,5 @@ export function ChatHeader({ onClear }) {
     </header>
   );
 }
+
+export const ChatHeader = React.memo(ChatHeaderComponent);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useSession } from './useSession.js';
 import { chatApi } from '../services/chatApi.js';
 import { MessageFactory } from '../lib/messageFactory.js';
@@ -26,15 +26,18 @@ export function useChat() {
   const [messages, setMessages] = useState([MessageFactory.welcomeMessage()]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const abortControllerRef = useRef(null);
 
-  const addSystemMessage = (text) => {
+  const addSystemMessage = useCallback((text) => {
     setMessages((prev) => [...prev, MessageFactory.systemMessage(text)]);
-  };
+  }, []);
 
-  const clearChat = () => {
+  const clearChat = useCallback(() => {
+    // Cancel any in-flight request before clearing
+    abortControllerRef.current?.abort();
     setMessages([MessageFactory.welcomeMessage()]);
     resetSession();
-  };
+  }, [resetSession]);
 
   const handleCommand = (trimmedInput) => {
     try {
@@ -53,15 +56,22 @@ export function useChat() {
   };
 
   const handleApiMessage = async (trimmedInput) => {
+    // Cancel any in-flight request before starting a new one
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+
     const userMessage = MessageFactory.userMessage(trimmedInput);
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const botText = await chatApi.sendMessage(trimmedInput, sessionId);
+      const botText = await chatApi.sendMessage(trimmedInput, sessionId, abortControllerRef.current.signal);
       setMessages((prev) => [...prev, MessageFactory.botMessage(botText)]);
     } catch (error) {
+      // Ignore intentional cancellation
+      if (error.name === 'AbortError') return;
+
       console.error('Chat error:', error);
       const errorMsg = error.message || FALLBACK_ERROR_MESSAGE;
       setMessages((prev) => [
@@ -73,7 +83,7 @@ export function useChat() {
     }
   };
 
-  const sendMessage = async (text) => {
+  const sendMessage = useCallback(async (text) => {
     if (!text.trim() || isLoading) return;
 
     const trimmedInput = text.trim();
@@ -83,7 +93,7 @@ export function useChat() {
     } else {
       await handleApiMessage(trimmedInput);
     }
-  };
+  }, [isLoading]);
 
   return {
     messages,

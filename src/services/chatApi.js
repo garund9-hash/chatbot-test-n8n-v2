@@ -19,7 +19,7 @@ import { n8nResponseAdapter } from '../lib/n8nAdapter.js';
 const API_ENDPOINT = '/api/chat';
 
 export const chatApi = {
-  async sendMessage(text, sessionId) {
+  async sendMessage(text, sessionId, signal) {
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -27,6 +27,7 @@ export const chatApi = {
         message: text,
         sessionId,
       }),
+      signal,
     });
 
     if (!response.ok) {

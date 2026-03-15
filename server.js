@@ -28,6 +28,11 @@ const PORT = process.env.PORT || 3001;
 // The webhook URL is held server-side, never sent to the client
 const WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 
+// Constants — hoisted to module scope to avoid re-declaration per request
+const MAX_MESSAGE_LENGTH = 2000;
+const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const WEBHOOK_TIMEOUT_MS = 30_000; // 30 seconds
+
 if (!WEBHOOK_URL) {
   console.error('❌ N8N_WEBHOOK_URL environment variable is not set.');
   console.error('   Set it before starting the server: export N8N_WEBHOOK_URL="https://..."');
@@ -39,7 +44,7 @@ app.use(helmet());
 app.use(cors({
   origin: process.env.ALLOWED_ORIGIN || 'http://localhost:5173',
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
 // Rate limiter: 20 requests per IP per minute
 const chatLimiter = rateLimit({
@@ -59,8 +64,6 @@ app.get('/health', (req, res) => {
 app.post('/api/chat', chatLimiter, async (req, res) => {
   try {
     const { message, sessionId } = req.body;
-    const MAX_MESSAGE_LENGTH = 2000;
-    const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
     if (!message || typeof message !== 'string' || message.length > MAX_MESSAGE_LENGTH) {
       return res.status(400).json({ error: 'Message must be a non-empty string under 2000 characters.' });
@@ -70,11 +73,12 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Invalid session ID.' });
     }
 
-    // Forward the request to the n8n webhook
+    // Forward the request to the n8n webhook with a timeout
     const response = await fetch(WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, sessionId }),
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -88,6 +92,12 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     // Return the response from n8n to the client
     res.json(data);
   } catch (error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      return res.status(504).json({
+        error: 'The AI service timed out. Please try again.',
+      });
+    }
+
     console.error('Server error:', error);
     res.status(500).json({
       error: 'Internal server error',
@@ -96,8 +106,16 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`✅ Server is running on http://localhost:${PORT}`);
   console.log(`   - Chat endpoint: POST /api/chat`);
   console.log(`   - Health check: GET /health`);
 });
+
+// Graceful shutdown handler
+const shutdown = () => {
+  console.log('Shutting down server...');
+  server.close(() => process.exit(0));
+};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

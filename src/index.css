@@ -356,3 +356,13 @@ button.send-btn:active {
     height: 100vh;
   }
 }
+
+/* Accessibility: Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .message-item {
+    animation: none;
+  }
+  .dot {
+    animation: none;
+  }
+}

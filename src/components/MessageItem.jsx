@@ -36,7 +36,7 @@ const renderStrategies = {
   system: (text) => <span>{text}</span>,
 };
 
-export function MessageItem({ message }) {
+function MessageItemComponent({ message }) {
   const { text, sender, isError, isSystem } = message;
 
   const messageType = resolveMessageType(sender, isError, isSystem);
@@ -58,3 +58,5 @@ export function MessageItem({ message }) {
     </div>
   );
 }
+
+export const MessageItem = React.memo(MessageItemComponent);
