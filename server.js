@@ -19,22 +19,36 @@
 
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // The webhook URL is held server-side, never sent to the client
-const WEBHOOK_URL = process.env.VITE_N8N_WEBHOOK_URL;
+const WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 
 if (!WEBHOOK_URL) {
-  console.error('❌ VITE_N8N_WEBHOOK_URL environment variable is not set.');
-  console.error('   Set it before starting the server: export VITE_N8N_WEBHOOK_URL="https://..."');
+  console.error('❌ N8N_WEBHOOK_URL environment variable is not set.');
+  console.error('   Set it before starting the server: export N8N_WEBHOOK_URL="https://..."');
   process.exit(1);
 }
 
 // Middleware
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:5173',
+}));
 app.use(express.json());
+
+// Rate limiter: 20 requests per IP per minute
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please wait before sending more messages.' },
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -42,16 +56,18 @@ app.get('/health', (req, res) => {
 });
 
 // API endpoint: forward chat messages to n8n webhook
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', chatLimiter, async (req, res) => {
   try {
     const { message, sessionId } = req.body;
+    const MAX_MESSAGE_LENGTH = 2000;
+    const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-    if (!message || typeof message !== 'string') {
-      return res.status(400).json({ error: 'Message is required and must be a string' });
+    if (!message || typeof message !== 'string' || message.length > MAX_MESSAGE_LENGTH) {
+      return res.status(400).json({ error: 'Message must be a non-empty string under 2000 characters.' });
     }
 
-    if (!sessionId || typeof sessionId !== 'string') {
-      return res.status(400).json({ error: 'Session ID is required and must be a string' });
+    if (!sessionId || !UUID_V4_REGEX.test(sessionId)) {
+      return res.status(400).json({ error: 'Invalid session ID.' });
     }
 
     // Forward the request to the n8n webhook
@@ -62,8 +78,8 @@ app.post('/api/chat', async (req, res) => {
     });
 
     if (!response.ok) {
-      return res.status(response.status).json({
-        error: `n8n webhook returned ${response.status} ${response.statusText}`,
+      return res.status(502).json({
+        error: 'The AI service is temporarily unavailable. Please try again.',
       });
     }
 

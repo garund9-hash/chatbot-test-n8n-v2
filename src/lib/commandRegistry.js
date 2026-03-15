@@ -25,10 +25,6 @@ export const commandRegistry = {
     const available = Object.keys(commandRegistry).join(', ');
     context.addSystemMessage(`Available commands: ${available}`);
   },
-
-  '/session': (context) => {
-    context.addSystemMessage(`Session ID: ${context.sessionId}`);
-  },
 };
 
 /**

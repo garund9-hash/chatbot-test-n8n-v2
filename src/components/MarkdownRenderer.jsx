@@ -24,8 +24,10 @@ export function MarkdownRenderer({ children }) {
           // `node` is the remark AST node injected by react-markdown.
           // It is destructured here to prevent it being forwarded to the DOM <a> element,
           // which would cause a React unknown-prop warning.
+          // Block javascript: and data: URIs to prevent XSS via prompt-injected bot responses.
+          const safeHref = href && /^(https?:\/\/|mailto:)/i.test(href) ? href : '#';
           return (
-            <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+            <a href={safeHref} target="_blank" rel="noopener noreferrer" {...props}>
               {children}
             </a>
           );
