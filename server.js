@@ -1,0 +1,87 @@
+/**
+ * Backend API Server
+ * Security: Holds the n8n webhook URL server-side, never exposing it to the client.
+ * The React app calls /api/chat, which forwards to the n8n webhook.
+ *
+ * This prevents the webhook URL from being embedded in the client JS bundle,
+ * where it would be visible to any user inspecting DevTools or the source.
+ *
+ * To run in development:
+ *   VITE_N8N_WEBHOOK_URL="https://..." node server.js
+ *
+ * To run in production, deploy this on a platform like:
+ * - Vercel (serverless)
+ * - Railway
+ * - Heroku
+ * - AWS Lambda
+ * - Cloudflare Workers
+ */
+
+import express from 'express';
+import cors from 'cors';
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// The webhook URL is held server-side, never sent to the client
+const WEBHOOK_URL = process.env.VITE_N8N_WEBHOOK_URL;
+
+if (!WEBHOOK_URL) {
+  console.error('❌ VITE_N8N_WEBHOOK_URL environment variable is not set.');
+  console.error('   Set it before starting the server: export VITE_N8N_WEBHOOK_URL="https://..."');
+  process.exit(1);
+}
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// API endpoint: forward chat messages to n8n webhook
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message, sessionId } = req.body;
+
+    if (!message || typeof message !== 'string') {
+      return res.status(400).json({ error: 'Message is required and must be a string' });
+    }
+
+    if (!sessionId || typeof sessionId !== 'string') {
+      return res.status(400).json({ error: 'Session ID is required and must be a string' });
+    }
+
+    // Forward the request to the n8n webhook
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, sessionId }),
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: `n8n webhook returned ${response.status} ${response.statusText}`,
+      });
+    }
+
+    const data = await response.json();
+
+    // Return the response from n8n to the client
+    res.json(data);
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`✅ Server is running on http://localhost:${PORT}`);
+  console.log(`   - Chat endpoint: POST /api/chat`);
+  console.log(`   - Health check: GET /health`);
+});
